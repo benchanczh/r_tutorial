@@ -1,0 +1,861 @@
+---
+title: "R tidyverse tutorial"
+author: "Benjamin Chen"
+output: 
+  learnr::tutorial:
+    progressive: FALSE
+    allow_skip: TRUE
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(nycflights13)
+library(tidyverse)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+
+Data science is an exciting discipline that allows you to turn raw data into understanding, insight, and knowledge. The goal of this tutorial is to help you learn the most important tools in R that will allow you to do data science. After completing this tutorial, you'll have the tools to tackle a wide variety of data science challenges, using the best parts of R.
+
+Data science is a huge field, and there is no way you can master it by doing a tutorial or reading a single book. The goal of this tutorial is to give you a foundation in the most important tools. Our model of the tools needed in a typical data science project looks something like this:
+
+![](http://r4ds.had.co.nz/diagrams/data-science.png)
+
+<br>
+
+First you must **import** your data into R. This typically means that you take data stored in a file, database, or web API, and load it into a data frame in R.
+
+Once you’ve imported your data, it is a good idea to **tidy** it. Tidying your data means storing it in a consistent form that matches the semantics of the dataset with the way it is stored. In brief, when your data is tidy, each column is a variable, and each row is an observation. 
+
+Once you have tidy data, a common first step is to **transform** it. Transformation includes narrowing in on observations of interest, creating new variables that are functions of existing variables, and calculating a set of summary statistics. Together, tidying and transforming are called **wrangling**, because getting your data in a form that’s natural to work with often feels like a fight!
+
+Once you have tidy data with the variables you need, there are two main engines of knowledge generation: visualisation and modelling. This tutorial will not talk about modelling since it is an advanced topic and I recommend you to study it with other resources.
+
+**Visualisation** is a fundamentally human activity. A good visualisation will show you things that you did not expect, or raise new questions about the data. A good visualisation might also hint that you’re asking the wrong question, or you need to collect different data.
+
+The last step of data science is **communication**, an absolutely critical part of any data analysis project. This tutorial, however, will not talk about communication either.
+
+Surrounding all these tools is **programming**. Programming is a cross-cutting tool that you use in every part of the project. You don't need to be an expert programmer, but learning more about programming pays off because becoming a better programmer allows you to automate common tasks, and solve new problems with greater ease.
+
+Please note that this tutorial is based on the book [_**R for Data Science**_](http://r4ds.had.co.nz/), written by Hadley Wickham and Garrett Grolemund.
+
+
+### Quiz
+```{r introduction_quiz}
+question("Which of the steps in a typical data science project listed below are not covered in tutorial?",
+         answer("Import"),
+         answer("Tidy"),
+         answer("Transform"),
+         answer("Visualise"),
+         answer("Model", correct = TRUE),
+         answer("Communicate", correct = TRUE),
+         allow_retry = TRUE,
+         random_answer_order = TRUE
+)
+```
+
+
+## Prerequisites
+
+There are four things this tutorial depends on: R, RStudio, a collection of R packages called the **tidyverse**, and a handful of other packages. Packages are the fundamental units of reproducible R code. They include reusable functions, the documentation that describes how to use them, and sample data. You don't need to worry about downloading and installing R and RStudio because all exercises in this tutorial allow you to directly execute R code. Required packages are also loaded with this tutorial.
+
+To download R and RStudio and explore your data in your local machine, please refer to our team's Confluence space.
+
+R is a software environment and programming language for data science. This tutorial will teach you how to use tidyverse package in R for your daily data analysis:
+
++ how to use R to inspect the contents of a data frame or tibble
+
++ how to tidy and transform your data using **tidyr** and **dplyr** package, and 
+
++ how to visualise your data using **ggplot2** package. 
+
+You will also meet `mpg`, `flights` and `diamonds`, three datasets that appear frequently in R examples.
+
+
+## Running R code
+
+### Coding basics
+You can use R as a calculator:
+```{r, calculator, exercise=TRUE, exercise.eval=TRUE}
+1 + 1
+```
+
+You can create new objects with `<-`:
+```{r, hello_world, exercise=TRUE, exercise.eval=TRUE}
+x <- "Hello, World!"
+x
+```
+
+All R statements where you create objects, **assignment** statements, have the same form:
+```
+object <- value
+```
+Please watch below short video to learn more about object. If you cannot watch below video within this tutorial, please click on the link to watch it on Vimeo.
+![](https://vimeo.com/220493412){width="100%"}
+
+When reading that code say "object name gets value" in your head. You will make lots of assignments and `<-` is a pain to type. Don't be lazy and use `=`: it will work, but it will cause confusion later. Instead, use RStudio's keyboard shortcut: Alt + - (the minus sign).
+
+### Object Name
+Object names must start with a letter, and can only contain letters, numbers, `_` and `.`. You want your object names to be descriptive, so you'll need a convention for multiple words. I recommend **snake_case** where you separate lowercase words with `_`.
+```
+i_use_snake_case
+```
+
+### Calling functions
+R has a large collection of built-in functions that are called like this:
+```
+function_name(arg1 = val1, arg2 = val2, ...)
+```
+
+### Quiz
+```{r run_r_code_quiz}
+quiz(
+  question("Which are the valid assignment operators in R?",
+           answer("`>-`"),
+           answer("`==`"),
+           answer("`+=`"),
+           answer("`-=`"),
+           answer("`<-`", correct = TRUE),
+           answer("`=`", correct = TRUE),
+           allow_retry = TRUE,
+           random_answer_order = TRUE
+  ),
+  
+  question("Which of below names are **snake_case** object names?",
+           answer("smart_people_use_snake_case", correct = TRUE),
+           answer("who.cares.snake.case"),
+           answer("otherPeopleUseCamelCase"),
+           allow_retry = TRUE,
+           random_answer_order = TRUE
+  )
+)
+```
+
+
+## Data frames
+
+R stores tabular data in two formats:
+1. As data frames
+2. As tibbles, which are a special type of data frame
+
+A **data frame** is a rectangular collection of variables (in the columns) and observations (in the rows). An example is the `mpg` data frame found in the ggplot2 package (aka `ggplot2::mpg`). The `mpg` data frame contains observations collected by the US Environmental Protection Agency on 38 models of cars. To see the `mpg` data frame, type `mpg` in the code chunk below and then click "Run Code".
+
+```{r print_mpg_dataset, exercise=TRUE}
+
+```
+
+```{r print_mpg_dataset-solution}
+mpg
+```
+
+
+## Variable types
+
+You might have noticed that R displays a row of three (or four) letter abbreviations under the column names. These abbreviations describe the type of variable that is stored in each column of the data frame:
++ `int` stands for integers.
+
++ `dbl` stands for doubles, or real numbers.
+
++ `chr` stands for character vectors, or strings.
+
++ `dttm` stands for date-times (a date + a time).
+
+There are three other common types of variables that aren't used in this dataset but are used in other datasets:
+
++ `lgl` stands for logical, vectors that contain only TRUE or FALSE.
+
++ `fctr` stands for factors, which R uses to represent categorical variables with fixed possible values.
+
++ `date` stands for dates.
+
+<br>
+
+Try print out the `flights` dataset from `nycflights13` package to see above types of variable
+```{r print_flights, exercise=TRUE}
+
+```
+
+```{r print_flights-solution}
+flights
+```
+
+### Quiz
+```{r, var_type_quiz}
+question("Which of the types of variable listed below are valid in R?",
+    answer("`int`", correct = TRUE),
+    answer("`dbl`", correct = TRUE),
+    answer("`chr`", correct = TRUE),
+    answer("`lgl`", correct = TRUE),
+    answer("`dttm`", correct = TRUE),
+    answer("`fctr`", correct = TRUE),
+    answer("`date`", correct = TRUE),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  )
+```
+
+## Data import
+
+In this chapter, you'll learn how to load flat files in R with the **readr** package, which is part of the core **tidyverse**.
+
+Most of readr's functions are concerned with turning flat files into data frames:
+
++ `read_csv()` reads comma delimited files, `read_csv2()` reads semicolon separated files (common in countries where, is used as the decimal place), `read_tsv()` reads tab delimited files, and `read_delim()` reads in files with any delimiter.
+
++ `read_fwf()` reads fixed width files. You can specify fields either by their widths with `fwf_widths()` or their position with `fwf_positions()`. `read_table()` reads a common variation of fixed width files where columns are separated by white space.
+
++ `read_log()` reads Apache style log files. (But also check out webreadr which is built on top of `read_log()` and provides many more helpful tools.)
+
+These functions all have similar syntax: once you've mastered one, you can use the others with ease. For the rest of this tutoiral we'll use `read_csv()` becuase csv files are one of the most common forms of data storage.
+
+The first argument to `read_csv()` is the most important: it's the path to the file to read. Try to pass the path of your data into below function:
+```{r, read_csv, exercise=TRUE}
+x <- read_csv()
+x
+```
+
+If you got an error about the incorrect path that you provided, the issue was probably about the escape character `\`. An escape character is a character which invokes an alternative interpretation on subsequent characters in a character sequence. R uses a backslash `\` as an escape character. To pass a valid path to a function, you have to replace all the `\` with `\\` or `/`. Please try again passing a valid path the above `read_csv()` function.
+
+### Quiz
+```{r, readr_quiz}
+question("Which of below path is valid passing to `read_csv()`?",
+    answer("i\\am\\a\\valid\\path"),
+    answer("i/am/not/a/valid/path", correct = TRUE),
+    answer("i/am/a|valid/path/as/well"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  )
+```
+
+
+## Tidy data
+
+In this section, you'll learn a consistent way to organise your data in R, an organisation called **tidy data**. Getting your data into this format requires some upfront work, but that work pays off in the long term. Once you have tidy data and the tidy tools provided by packages in the tidyverse, you will spend much less time munging data from one representation to another, allowing you to spend more time on the analytic questions at hand.
+
+There are three interrelated rules which make a dataset tidy:
+
+1. Each variable must have its own column.
+
+2. Each observation must have its own row.
+
+3. Each value must have its own cell.
+
+Below figure shows the rules visually:
+![](http://r4ds.had.co.nz/images/tidy-1.png){width=100%}
+
+
+### Gathering
+
+The principles of tidy data seem so obvious that you might wonder if you'll ever encounter a dataset that isn't tidy. Unfortunately, however, most data that you will encounter will be untidy. There are two main reasons:
+
+1. Most people aren't familiar with the principles of tidy data, and it's hard to derive them yourself unless you spend *a lot* of time working with data.
+
+2. Data is often organised to facilitate some use other than analysis. For example, data is often organised to make entry as easy as possible.
+
+This means for most real analyses, you'll need to do some tidying. The first step is always to figure out what the variables and observations are. Sometimes this is easy; other times you'll need to consult with the people who originally generated the data. The second step is to resolve one of two common problems:
+
+1. One variable might be spread across multiple columns.
+
+2. One observation might be scattered across multiple rows.
+
+To fix these problems, you’ll need the two most important functions in **tidyr**: `gather()` and `spread()`.
+
+A common problem is a dataset where some of the column names are not names of variables, but values of a variable. Take the built-in dataset `table4a`: the column names `1999` and `2000` represent values of the `year` variable, and each row represents two observations, not one.
+```{r, warning=FALSE}
+table4a
+```
+
+To tidy a dataset like this, we need to gather those columns into a new pair of variables. To describe that operation we need three parameters:
+
++ The set of columns that represent values, not variables. In this example, those are the columns `1999` and `2000`.
+
++ The name of the variable whose values form the column names. I call that the `key`, and here it is `year`.
+
++ The name of the variable whose values are spread over the cells. I call that value, and here it’s the number of `cases`.
+
+Try to run below `gather()` function:
+```{r, gather, exercise=TRUE}
+gather(table4a, `1999`, `2000`, key = "year", value = "cases")
+```
+
+<br>
+Below figure shows `gather()` function visually:
+![](http://r4ds.had.co.nz/images/tidy-9.png){width=100%}
+
+<br>
+
+### Spreading
+
+Spreading is the opposite of gathering. You use it when an observation is scattered across multiple rows. For example, take built-in dataset `table2`: an observation is a country in a year, but each observation is spread across two rows.
+```{r}
+table2
+```
+
+To tidy this up, we first analyse the representation in similar way to `gather()`. This time, however, we only need two parameters:
+
++ The column that contains variable names, the key column. Here, it's type.
+
++ The column that contains values forms multiple variables, the value column. Here it's count.
+
+Try to run below `spread()` function:
+```{r, spread, exercise=TRUE}
+spread(table2, key = type, value = count)
+```
+
+<br>
+Below figure shows `spread()` function visually:
+![](http://r4ds.had.co.nz/images/tidy-8.png){width=100%}
+
+<br>
+
+### Seperate
+
+Sometime your dataset has a different problem: one column contains two variables. To fix this problem, we'll need the `separate()` function. Let's take a look at built-in dataset `table3`.
+```{r}
+table3
+```
+
+The `rate` column contains both `cases` and `population` variables, and we need to split it into two variables. `separate()` pulls apart one column into multiple columns, by splitting wherever a separator character appears. It takes the name of the column to separate, and the names of the columns to separate into. Try to run below `seperate()` function:
+```{r, seperate, exercise=TRUE}
+separate(table3, rate, into = c("cases", "population"))
+```
+
+<br>
+Below figure shows `seperate()` function visually:
+![](http://r4ds.had.co.nz/images/tidy-17.png){width=100%}k
+
+By default, `separate()` will split values wherever it sees a non-alphanumeric character (i.e. a character that isn't a number or letter). If you wish to use a specific character to separate a column, you can pass the character to the `sep` argument of `separate()`. 
+
+```
+separate(table3, rate, into = c("cases", "population"), sep = "/")
+```
+
+You can also pass a vector of integers to `sep`. `separate()` will interpret the integers as positions to split at. When using integers to separate strings, the length of `sep` should be one less than the number of names in into. For example:
+```{r, seperate_sep, exercise=TRUE, exercise.eval=TRUE}
+separate(table3, year, into = c("century", "year"), sep = 2)
+```
+
+<br>
+
+### Unite
+
+`unite()` is the inverse of `separate()`: it combines multiple columns into a single column. Take a look at built-in dataset `table5`:
+```{r}
+table5
+```
+
+Try to run below `unite()` function:
+```{r, unite, exercise=TRUE}
+unite(table5, new, century, year)
+```
+
+In this case we also need to use the `sep` argument. The default will place an underscore (`_`) between the values from different columns. Here we don't want any separator so we use `""`:
+```{r, unite_sep, exercise=TRUE, exercise.eval=TRUE}
+unite(table5, new, century, year, sep = "")
+```
+
+<br>
+
+### Quiz
+
+```{r tidy_data_quiz}
+quiz(
+  question("Which of the argument below you will use When you want to use a specific character to separate a column in `seperate()`?",
+    answer("`sep`", correct = TRUE),
+    answer("`into`"),
+    answer("`break`"),
+    answer("`seperate`"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("Can you pass a vector of integer to `sep`?",
+    answer("Yes", correct = TRUE),
+    answer("No"), 
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  )
+)
+```
+
+
+## Data transformation
+
+In previous sections you've learnt how to read your data in R using **readr** and how to tidy your data using **tidyr**. In the following 5 sections you are going to learn the five key functions in **dplyr** that allow you to solve the vast majority of your data manipulation challenges:
+
++ Pick observation by their values (`filter()`)
+
++ Reorder the rows (`arrange()`)
+
++ Pick variables by their names (`select()`)
+
++ Create new variables with functions of existing variables (`mutate()`)
+
++ Collapse many values down to a single summary (`summary()`)
+
+These can all be used in conjunction with `group_by()` which changes the scope of each function from operating on the entire dataset to operating on it group-by-group. These six functions provide the verbs for a language of data manipulation.
+
+All verbs work similarly:
+
+1. The first argument is a data frame.
+
+2. The subsequent arguments describe what to do with the data frame, using the variable names (without quotes).
+
+3. The result is a new data frame.
+
+Together these properties make it easy to chain together multiple simple steps to achieve a complex result. Let's dive in and see how these verbs work.
+
+<br>
+
+### Filter rows with `filter()`
+
+`filter()` allows you to subset observations based on their values. The first argument is the name of the data frame. The second and subsequent arguments are the expressions that filter the data frame.
+
+To use filtering effectively, you have to know how to select the observations that you want using the comparison operators. R provides the standard suite: `>`, `>=`, `<`, `<=`, `!=` (not equal), and `==` (equal).
+
+Multiple arguments to `filter()` are combined with "and": every expression must be true in order for a row to be included in the output. For other types of combinations, you'll need to use Boolean operators yourself: `&` is "and", `|` is "or", and `!` is "not". Below graph shows the complete set of Boolean operations.
+
+<br>
+
+```{r fig1, echo = FALSE, out.width = "100%", fig.cap = "In the figure above, `x` is the left-hand circle, `y` is the right-hand circle, and the shaded region show which parts each operator selects."} 
+knitr::include_graphics("http://r4ds.had.co.nz/diagrams/transform-logical.png")
+```
+
+Let's filter the `mpg` for observations with 4 cylinders and 25 highway miles per gallon or less.
+```{r, filter, exercise=TRUE}
+
+```
+
+```{r, filter-solution}
+filter(mpg, cyl == 4 & hwy <= 25)
+```
+
+<br>
+
+### Arrange rows with `arrange()`
+
+`arrange()` works similarly to `filter()` except that instead of selecting rows, it changes their order. It takes a data frame and a set of column names (or more complicated expressions) to order by. If you provide more than one column name, each additional column will be used to break ties in the values of preceding columns.
+
+Try to re-order `mpg` by column `displ` in *ascending* order:
+```{r, arrange, exercise=TRUE}
+
+```
+
+```{r, arrange-solution}
+arrange(mpg, displ)
+```
+
+Try to re-order `mpg` by column `displ` in *descending* order:
+```{r, arrange_desc, exercise=TRUE}
+
+```
+
+```{r, arrange_desc-solution}
+arrange(mpg, desc(displ))
+```
+
+<br>
+
+### Select columns with `select()`
+
+It's not uncommon to get datasets with hundreds or even thousands of variables. In this case, the first challenge is often narrowing in on the variables you're actually interested in. `select()` allows you to rapidly zoom in on a useful subset using operations based on the names of the variables.
+
+Try to select column `model`, `year`, `drv` and `class` from `mpg`.
+```{r, select, exercise=TRUE}
+
+```
+
+```{r, select-solution}
+select(mpg, model, year, drv, class)
+```
+
+<br>
+
+### Add new variables with `mutate()`
+
+Besides selecting sets of existing columns, it's often useful to add new columns that are functions of existing columns. That's the job of `mutate()`.
+
+`mutate()` always adds new columns at the end of your dataset so we'll start by creating a narrower dataset so we can see the new variables. Remember that when you're in RStudio, the easiest way to see all the columns is `View()`.
+
+Try to create a new column `speed` to calculate each airline's speed (km/h) using columns `distance` and `air_time`. Please note unit of `air_time` is minute.
+
+```{r, mutate, exercise=TRUE}
+flights_mutate <- flights %>% 
+  mutate(
+    ...
+  )
+
+flights_mutate
+```
+
+```{r, mutate-solution}
+flights_mutate <- flights %>% 
+  mutate(
+    speed = distance / air_time * 60
+  )
+
+flights_mutate
+```
+
+<br>
+
+### Grouped summaries with `summarise()`
+
+`summarise()` is not terribly useful unless we pair it with `group_by()`. This changes the unit of analysis from the complete dataset to individual groups. Then, when you use the `dplyr` verbs on a grouped data frame they'll be automatically applied "by group".
+
+Try to count how many observations for each `manufacturer` by `year` in `mpg`.
+
+```{r, summarise, exercise=TRUE}
+
+```
+
+```{r, summarise-solution}
+group_by(mpg, manufacturer, year) %>% 
+  summarise(freq = n())
+```
+
+<br>
+
+### Combining multiple operations with the pipe
+
+Imagine that we want to explore the relationship between the distance and average delay for each location in the `flights` dataset. Using what you know about **dplyr**, you might write code like this:
+```
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest,
+  count = n(),
+  dist = mean(distance, na.rm = TRUE),
+  delay = mean(arr_delay, na.rm = TRUE)
+)
+delay <- filter(delay, count > 20, dest != "HNL")
+```
+
+There are three steps to prepare this data:
+
+1. Group flights by destination.
+
+2. Summarise to compute distance, average delay, and number of flights.
+
+3. Filter to remove noisy points and Honolulu airport, which is almost twice as far away as the next closest airport.
+
+This code is a little frustrating to write because we have to give each intermediate data frame a name, even though we don't care about it. Naming things is hard, so this slows down our analysis.
+
+There's another way to tackle the same problem with the pipe, `%>%`:
+```
+delays <- flights %>% 
+  group_by(dest) %>% 
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) %>% 
+  filter(count > 20, dest != "HNL")
+```
+
+This focuses on the transformations, not what's being transformed, which makes the code easier to read. You can read it as a series of imperative statements: group, then summarise, then filter. As suggested by this reading, a good way to pronounce `%>%` when reading code is "then".
+
+Behind the scenes, `x %>% f(y)` turns into `f(x, y)`, and `x %>% f(y) %>% g(z)` turns into `g(f(x, y), z)` and so on. You can use the pipe to rewrite multiple operations in a way that you can read left-to-right, top-to-bottom.
+
+<br>
+
+### Quiz
+```{r data_transformation, quiz}
+quiz(
+  question("Which of below statements return FALSE?",
+    answer("(5 >= 4) & (3 <= 0)", correct = TRUE),
+    answer("(6 != 9) | ('a' == 'b')"), 
+    answer("(1 > 9) & (4 == 8)", correct = TRUE),
+    answer("('a' %in% c('a', 'b', 'c')) | ((2 / 2) >= 0)"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("Which of below scripts return data of audi cars with hwy less than 20?",
+    answer("filter(mpg, manufacturer == 'audi', hwy <= 20"),
+    answer("filter(mpg, displ = 'audi', hwy == 20)"),
+    answer("filter(mpg, manufacturer == 'audi', hwy < 20)", correct = TRUE),
+    answer("filter(mpg, manufacturer == 'audi', hwy >= 20)"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("Which of below Boolean operation returns elements in either x or y but not both?",
+    answer("`xor(x, y)`", correct = TRUE),
+    answer("`x & !y`"),
+    answer("`x | y`"),
+    answer("`!x & y`"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("What does `desc()` function do?",
+    answer("re-order data frame in descending order", correct = TRUE),
+    answer("re-order data frame in ascending order"),
+    answer("re-order data frame in random order"),
+    answer("There is no `desc()` in R"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("What happens if you include the name of a variable multiple times in a `select()` call?",
+    answer("It returns only one column for that variable", correct = TRUE),
+    answer("It returns multiple columns for that variable"),
+    answer("It returns an error"),
+    answer("It ignores that variable"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("Which statement below is correct?",
+    answer("`mutate()` always adds new columns at the end of your dataset.", correct = TRUE),
+    answer("`mutate()` always adds new columns at the beginning of your dataset."),
+    answer("`mutate()` always adds new columns at the position that you provide."),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  ),
+  
+  question("Which of below code returns the same result as `filter(summarise(group_by(mpg, manufacturer, year), freq = n()), freq >= 15)` does?",
+    answer("`mpg %>% group_by(manufacturer, year) %>% summarise(freq = n()) %>% filter(freq >= 15)`", correct = TRUE),
+    answer("`mpg %>% summarise(freq = n()) %>% group_by(manufacturer, year) %>% filter(freq >= 15)`"),
+    answer("`mpg %>% filter(freq >= 15) %>% summarise(freq = n()) %>% group_by(manufacturer, year)`"),
+    answer("`mpg %>% filter(freq >= 15) %>% group_by(manufacturer, year) %>% summarise(freq = n())`"),
+    allow_retry = TRUE,
+    random_answer_order = TRUE
+  )
+)
+```
+<br>
+
+## Data visualisation with ggplot2
+
+This section will teach you how to visualise your data using ggplot2. R has several systmes for making graphs, but ggplot2 is one of the most elegant and most versatile. ggplot2 implements the **grammar of graphics**, a coherent system for describing and building graphs.
+
+Please watch below short video about grammar of graphics.
+![](https://vimeo.com/223812632)
+
+A ggplot2 graphing template is like below. To make a graph, replace the bracketed sections in the code below with a dataset, a geom functions, or a collection of mappings.
+
+```
+ggplot(data = <DATA>) +
+  <GEOM_FUNCTION>(mapping = aes(<MAPPINGS>))
+```
+<br>
+
+Let's see how to plot the relationship between `displ` and `hwy` in `mpg` dataset.
+```{r, mpg_scatterplot, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy))
+```
+
+<br>
+
+With ggplot2, you begin a plot with the function `ggplot()`. `ggplot()` creates a coordinate system that you can add layers to. The first argument of `ggplot()` is the dataset to use in the graph. So `ggplot(data = mpg)` creates an empty graph, but it's not very interesting so I'm not going to show it here.
+
+You complete your graph by adding one or more layers to `ggplot()`. The function `geom_point()` adds a layer of points to your plot, which creates a scatterplot. ggplot2 comes with many geom functions that each add a different type of layer to a plot.
+
+Each geom function in ggplot2 takes a `mapping` argument. This defines how variables in your dataset are mapped to visual properties. The mapping argument is always paired with `aes()`, and the `x` and `y` arguments of `aes()` specify which variables to map to the x and y axes. ggplot2 looks for the mapped variable in the `data` argument, in this case, `mpg`.
+
+<br>
+
+### Aesthetic mappings
+
+Continue on the previous plot, you can add a third variable, like `class`, to a two dimensional scatterplot by mapping it to an aesthetic. An aesthetic is a visual property of the objects in your plot. Aesthetics include things like the size, the shape or the color of your points. You can convey information about your data by mapping the aesthetics in your plot to the variables in your dataset.
+
+For exmaple, your can map the colors of your points to the `class` variable to reveal the class of each car.
+```{r, mpg_color_class, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data= mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, color = class))
+```
+
+<br>
+
+Try to map the shape of your points to the `drv` variable.
+```{r, mpg_shape_drv, exercise=TRUE}
+
+```
+
+```{r, mpg_shape_drv-solution}
+ggplot(data= mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, shape = drv))
+```
+
+<br>
+
+### Facets
+
+Another way to add additional variables, particularly useful for categorical variables, is to split your plot into *facets*, subplots that each display one subset of the data.
+
+To facet your plot by a single variable, use `facet_wrap()`. The first argument of `facet_wrap()` should be a formula, which you create with `~` followed by a variable name(here "formula" is the name of data strcuture in R, not a synonym for "equation"). The variable that you pass to `facet_wrap()` should be discrete.
+
+```{r, facet_wrap, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_wrap(~ class, nrow = 2)
+```
+
+<br>
+
+To facet your plot on the combination of two variables, add `facet_grid()` to your plot call. The first argument of `facet_grid()` is also a formula. This time the formula should contain two variable names separated by a `~`.
+
+```{r, facet_grid, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(drv ~ cyl)
+```
+
+<br>
+
+### Geometric objects
+
+In this section we will talk about `geom`. A `geom` is the geometrical object that a plot uses to represent data. To change the geom in your plot, change the geom function that you add to `ggplot()`. `geom_point()` is one of the geom functions that you have already seen. Every geom function in ggplot2 takes a `mapping` argument. 
+
+For exmaple, you can add a smooth regression line on the previous plot.
+```{r, geom_smooth, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+```
+This, however, introduces some duplication in our code. You can avoid this type of repetition by passing a set of mappings to `ggplot()`. ggplot2 will treat these mappings as global mappings that apply to each geom in the graph.
+```{r, geom_smooth_global, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) +
+  geom_point() +
+  geom_smooth()
+```
+
+If you place mappings in a geom function, ggplot2 will treat them as local mappings for the layer. It will use these mappings to extend or overwrite the global mappings for *that layer only*.
+```{r, geom_smooth_local, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) +
+  geom_point(mapping = aes(color = class)) +
+  geom_smooth()
+```
+
+<br>
+
+### Statistical transformations
+
+Let's take a look at a bar chart. Bar charts seem simple, but they are interesting because they reveal something subtle about plots. In this section we will use `diamonds` dataset to explore bar charts.
+
+```{r}
+diamonds
+```
+
+The chart below shows that more diamonds are available with high quality cuts than with low quality cuts.
+```{r, diamonds_bar, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut))
+```
+
+Above chart displays a variable `cut` on the x-axis and count on y-axis. Count, however, is not avariable in `diamonds`. Many graphs, like scatterplots, plot the raw values of your dataset. Other graphs, like bar charts, calculate new values to plot:
++ bar charts, histograms, and frequency polygons bin your data and then plot bin counts, the number of points that fall in each bin.
+
++ smoothers fit a model to your data and then plot predictions from the model.
+
++ boxplots compute a robust summary of the distribution and then display a specially formatted box.
+
+The algorithm used to calculate new values for a graph is called a **stat**, short for statistical transformation. The figure below describes how this process works with `geom_bar()`
+
+<br>
+
+You can learn which stat a geom uses by inspecting the default value for the `stat` argument.
+
+<br>
+
+There is one more piece of magic associated with bar charts. You can colour a bar chart using either the `fill` aesthetic:
+```{r, fill, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut, fill = clarity))
+```
+
+The stacking is performed automatically by the **position adjustment** specified by the `position` argument. You can try one of the three other options: "identity", "dodge", or "fill".
+
+<br>
+
+### Coordinate systems
+
+Coordinate systems are probably the most complicated part of ggplot2. The default coordinated system is the Cartesian coordinate system where the x and y position act independently to determine the location of each point. There are a number of other coordinate systems that are occasionally helpful:
+`coord_flip()` switches the x and y axes. For exmaple:
+```{r, coord_flip, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+geom_boxplot() +
+coord_flip()
+```
+
+`coord_polar()` uses polar coordinates. Polar coordinates reveal an interesting connection between a bar chart and a Coxcomb chart.
+```{r, coord_polar, exercise=TRUE, exercise.eval=TRUE}
+ggplot(data= diamonds) +
+geom_bar(mapping = aes(x = cut, fill = cut),
+show.legend = FALSE,
+width = 1) +
+theme(aspect.ratio = 1) +
+labs(x = NULL, y = NULL) +
+coord_polar()
+```
+
+<br>
+
+### The layered grammar of graphics
+
+In the previous sections, you learned much more than how to make scatterplots, bar charts, and boxplots. You learned a foundation that you can use to make *any* type of plot with ggplot2. Below is our new template with seven parameters:
+```
+ggplot(data = <DATA>) +
+  <GEOM_FUNCTION>(
+    mapping = aes(<MAPPINGS>),
+    stat = <STAT>,
+    position = <POSITION>
+  ) +
+<COORDINATE_FUNCTION> +
+<FACET_FUNCTION>
+```
+
+The seven parameters in the template compose the grammar of graphics, a formal system for building plots. The grammar of graphics is based on the insight that you can uniquely describe *any* plot as a combination of a dataset, a geom, a set of mappings, a stat, a position adjustment, a coordinate system and a faceting scheme.
+
+<br>
+
+### Quiz
+
+```{r, echo=TRUE}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = "blue"))
+```
+
+```{r, ggplot2_quiz}
+quiz(
+  question("What's gone wrong with above code? Why are the points not blue?",
+           answer("To set color manually, put it outside of `aes()`", correct = TRUE),
+           answer("'blue' cannot be passed to `color`."),
+           answer("You can only pass variable names from the dataset to geom functions."),
+           answer("There should be no quotation marks for 'blue'."),
+           allow_retry = TRUE,
+           random_answer_order = TRUE
+  ),
+  
+  question("What does `nrow` do? What does `ncol` do in `facet_wrap`?",
+           answer("`nrow()` sets the number of rows and `ncol()` sets the number of columns in facet", correct = TRUE),
+           answer("`nrow()` sets the number of columns and `ncol()` sets the number of rows in facet"), 
+           answer("Both `nrow()` and `ncol()` set the number of blocks in facet"),
+           allow_retry = TRUE,
+           random_answer_order = TRUE
+  ),
+  
+  question("What does the `se` argument to `geom_smooth()` do?",
+           answer("It displays confidence interval around smooth.", correct = TRUE),
+           answer("It seperates points by the variable name passed to it."),
+           answer("It controls if the line is smooth or not."),
+           allow_retry = TRUE,
+           random_answer_order = TRUE
+  ),
+  
+  question("Which of below functions are COORDINATE_FUNCTION?",
+           answer("`coord_quickmap()`", correct = TRUE),
+           answer("`coord_map()`", correct = TRUE),
+           answer("`coord_flip()`", correct = TRUE),
+           answer("`coord_reverse()`"),
+           answer("`coord_fixed()`", correct = TRUE),
+           allow_retry = TRUE,
+           random_answer_order = TRUE
+  )
+)
+```
+
+
